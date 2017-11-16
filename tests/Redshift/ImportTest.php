@@ -537,7 +537,6 @@ class ImportTest extends \PHPUnit_Framework_TestCase
 
     public function testNullifyCopyIncrementalWithPk()
     {
-        // test convertEmptyValuesToNull
         $this->connection->query("DROP TABLE IF EXISTS \"$this->destSchemaName\".\"nullify\" ");
         $this->connection->query("CREATE TABLE \"$this->destSchemaName\".\"nullify\" (\"id\" VARCHAR, \"name\" VARCHAR, \"price\" NUMERIC, PRIMARY KEY(\"id\"))");
         $this->connection->query("INSERT INTO \"$this->destSchemaName\".\"nullify\" VALUES('4', '3', 2)");
@@ -561,15 +560,32 @@ class ImportTest extends \PHPUnit_Framework_TestCase
             ]
         );
 
-        $importedData = $this->connection->query("SELECT \"id\", \"name\", \"price\" FROM \"{$this->destSchemaName}\".\"nullify\" ORDER BY \"id\" ASC")->fetchAll(\PDO::FETCH_ASSOC);
-        $this->assertCount(3, $importedData);
-        $this->assertTrue(null === $importedData[0]["name"]);
-        $this->assertTrue(null === $importedData[0]["price"]);
-        $this->assertTrue(null === $importedData[1]["name"]);
-        $this->assertTrue(null === $importedData[2]["name"]);
-        $this->assertTrue(null === $importedData[2]["price"]);
+        $importedData = $this->connection->query("SELECT \"id\", \"name\", \"price\" FROM \"{$this->destSchemaName}\".\"nullify\"")->fetchAll(\PDO::FETCH_ASSOC);
 
-        // test apply change if destination contains null
+        $expectedData = [
+            [
+                'id' => '1',
+                'name' => null,
+                'price' => null,
+            ],
+            [
+                'id' => '2',
+                'name' => null,
+                'price' => '500',
+            ],
+            [
+                'id' => '4',
+                'name' => null,
+                'price' => null,
+            ],
+
+        ];
+
+        $this->assertArrayEqualsSorted($expectedData, $importedData, 'id');
+    }
+
+    public function testNullifyCopyIncrementalWithPkDestinationWithNull()
+    {
         $this->connection->query("DROP TABLE IF EXISTS \"$this->destSchemaName\".\"nullify\" ");
         $this->connection->query("CREATE TABLE \"$this->destSchemaName\".\"nullify\" (\"id\" VARCHAR, \"name\" VARCHAR, \"price\" NUMERIC, PRIMARY KEY(\"id\"))");
         $this->connection->query("INSERT INTO \"$this->destSchemaName\".\"nullify\" VALUES('4', NULL, NULL)");
@@ -593,13 +609,28 @@ class ImportTest extends \PHPUnit_Framework_TestCase
             ]
         );
 
-        $importedData = $this->connection->query("SELECT \"id\", \"name\", \"price\" FROM \"{$this->destSchemaName}\".\"nullify\" ORDER BY \"id\" ASC")->fetchAll(\PDO::FETCH_ASSOC);
-        $this->assertCount(3, $importedData);
-        $this->assertTrue(null === $importedData[0]["name"]);
-        $this->assertTrue(null === $importedData[0]["price"]);
-        $this->assertTrue(null === $importedData[1]["name"]);
-        $this->assertTrue(null === $importedData[2]["name"]);
-        $this->assertTrue(null !== $importedData[2]["price"]);
+        $importedData = $this->connection->query("SELECT \"id\", \"name\", \"price\" FROM \"{$this->destSchemaName}\".\"nullify\"")->fetchAll(\PDO::FETCH_ASSOC);
+
+        $expectedData = [
+            [
+                'id' => '1',
+                'name' => null,
+                'price' => null,
+            ],
+            [
+                'id' => '2',
+                'name' => null,
+                'price' => '500',
+            ],
+            [
+                'id' => '4',
+                'name' => null,
+                'price' => '500',
+            ],
+
+        ];
+
+        $this->assertArrayEqualsSorted($expectedData, $importedData, 'id');
     }
 
     public function tables()
